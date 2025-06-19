@@ -1,0 +1,148 @@
+studies(student_0, physics201).
+studies(student_0, mech202).
+studies(student_0, csen202).
+
+studies(student_1, physics201).
+studies(student_1, physics201).
+
+studies(student_2, csen202).
+studies(student_2, signls402).
+
+studies(student_3, netw201).
+studies(student_3, elct402).
+studies(student_3, signals402).
+studies(student_7, math401).
+studies(student_7, csis402).
+studies(student_7, csen403).
+studies(student_7, csen401).
+studies(student_7, rpw401).
+studies(student_7, elct401).
+studies(student_7, de404).
+studies(student_8, math401).
+studies(student_8, csis402).
+studies(student_8, csen602).
+studies(student_8, csen401).
+studies(student_8, rpw401).
+studies(student_8, elct401).
+studies(student_8, de404).
+studies(student_9, math401).
+studies(student_9, csen601).
+studies(student_9, dmet1001).
+studies(student_9, csen401).
+studies(student_9, rpw401).
+studies(student_9, elct401).
+studies(student_9, de404).
+
+
+
+
+studies(student_17, csen601).
+studies(student_17, csen602).
+studies(student_17, csen603).
+studies(student_17, csen604).
+studies(student_17, dmet604).
+studies(student_18, math401).
+studies(student_18, csen403).
+studies(student_18, csen603).
+studies(student_18, csen604).
+studies(student_18, dmet604).
+studies(student_19, csen403).
+studies(student_19, csen602).
+studies(student_19, csen603).
+studies(student_19, csen604).
+studies(student_19, csen907).
+
+
+
+
+studies(student_27, csen1003).
+studies(student_27, csen1002).
+studies(student_27, huma1001).
+studies(student_27, dmet1001).
+studies(student_27, csen907).
+studies(student_27, netw1009).
+studies(student_28, csen1003).
+studies(student_28, csen1002).
+studies(student_28, csen603).
+studies(student_28, csen602).
+studies(student_28, csen907).
+studies(student_28, netw1009).
+studies(student_29, csen403).
+studies(student_29, csen1002).
+studies(student_29, huma1001).
+studies(student_29, dmet1001).
+studies(student_29, csen907).
+studies(student_29, csen401).
+
+
+
+
+
+
+day_schedule(saturday, [[math203],[physics201, csen202],[signls402, netw201],[],[]]).
+day_schedule(sunday, [[math203],[chem101, mech202],[],[],[]]).
+day_schedule(monday, [[math203],[physics201, csen202],[],[],[]]).
+day_schedule(tuesday, [[signals402],[physics201, csen202],[],[],[]]).
+day_schedule(wednesday, [[math203],[],[physics201, elct402],[],[]]).
+day_schedule(thursday, [[math203],[],[],[netw201, csen202],[]]).
+day_schedule(saturday, [[math401, csen602, csen601], [], [rpw401, csen602, csen601], [], []]).
+day_schedule(sunday, [[csis402, csen403, dmet604, csen1003], [math401, dmet1001], [rpw401, csen403], [csen403], []]).
+day_schedule(monday, [[], [csen401, csen604], [], [rpw401, csen1003], [de404]]).
+day_schedule(tuesday, [[], [de404, csen1002], [csen401, dmet604, netw1009], [elct401, csis402, dmet1001], []]).
+day_schedule(wednesday, [[math401], [csen604, huma1001], [csen401, elct401], [csis402, math401, csen604, huma1001], [csen1002]]).
+day_schedule(thursday, [[], [csen603], [csen401, netw1009], [rpw401, elct401, csen603, csen907], [elct401, csen907]]).
+
+
+course_slot(Course, slot(Day, SlotNum, Course)) :-
+    day_schedule(Day, Slots),
+    nth1(SlotNum, Slots, SlotCourses),
+    member(Course, SlotCourses).
+	
+student_schedule(Student, Slots):-
+    setof(C, studies(Student, C), Courses),
+    setof(Sched, choose_schedule(Courses, Sched), SlotsList),
+    member(Slots, SlotsList),
+    no_clashes(Slots),
+    study_days(Slots, 5).
+university_schedule(S):-
+    findall(Student, studies(Student, _), All),
+    sort(All, Students),
+    schedule_all_students(Students, S).
+
+
+schedule_all_students([], []).
+schedule_all_students([Student|Rest], [sched(Student, Slots)|Schedules]) :-
+    student_schedule(Student, Slots),
+    schedule_all_students(Rest, Schedules).
+	
+	
+	
+choose_schedule([], []).
+choose_schedule([C|Cs], [slot(Day, SlotNum, C)|Rest]) :-
+    course_slot(C, slot(Day, SlotNum, C)),
+    choose_schedule(Cs, Rest).
+
+no_clashes([H|T]):- helpno([H|T],[],L),mem(L).
+
+mem([]).
+mem([H|T]):- \+member(H,T),mem(T).
+
+helpno([],L,L).
+helpno([slot(D,M,_)|T],R,L):- append(R,[box(D,M)],R1),helpno(T,R1,L).
+
+
+study_days([slot(D,M,S)|T],DayCount):-helper_study_days([slot(D,M,S)|T],[],Days),help2(Days,R),length(R,N),N =< DayCount.
+help2([],[]).
+help2([H|T],[H|TS]):- \+member(H,T),help2(T,TS).
+help2([H|T],L):- member(H,T),help2(T,L).
+
+helper_study_days([],R,R).
+helper_study_days([H|T],L,R):- H = slot(D,_,_),append(L,[D],L1),helper_study_days(T,L1,R).
+help3(_,[],0).
+help3(Day,[sched(_,Slots)|T],S):- help3(Day,T,S1), member(slot(Day,_,_),Slots), S is S1 + 1.
+assembly_hours(Sched,AH):-
+	findall(Day,(member(sched(_,Slots),Sched),member(slot(Day,_,_),Slots)),Daysrep),
+	sort(Daysrep,Days),
+	findall(slot(Day,Slotnum),(numlist(1,5,NL),member(Slotnum,NL),member(Day,Days),help3(Day,Sched,S),length(Sched,N),S=N,
+	\+((member(sched(_,Slots),Sched),member(slot(Day,Slotnum,_),Slots)))
+	),AHrep),sort(AHrep,AH).
